@@ -163,7 +163,7 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
 
   // ================ quit command ===============================
 
-  if (input_str == "q" || input_str == "quit") {
+  if (input_str == "q" || input_str == "quit" || input_str == "exit") {
     _cheat_cmd_ret.loop_statement = E_loop_statement::break_;
     return _cheat_cmd_ret;
   }
