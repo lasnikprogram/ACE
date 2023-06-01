@@ -1,5 +1,6 @@
 package com.kuhakupixel.atg.ui.menu
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
@@ -16,14 +16,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kuhakupixel.atg.backend.ACE
@@ -33,10 +32,11 @@ import com.kuhakupixel.atg.backend.ACE.Operator
 import com.kuhakupixel.atg.backend.ACE.operatorEnumToSymbolBiMap
 import com.kuhakupixel.atg.backend.ACEClient.InvalidCommandException
 import com.kuhakupixel.atg.ui.GlobalConf
-import com.kuhakupixel.atg.ui.util.ATGDropDown
+import com.kuhakupixel.atg.ui.overlay.service.OverlayComposeUI.OverlayManager
 import com.kuhakupixel.atg.ui.util.CheckboxWithText
 import com.kuhakupixel.atg.ui.util.CreateTable
-import com.kuhakupixel.atg.ui.util.ErrorDialog
+import com.kuhakupixel.atg.ui.util.NumberInputField
+import com.kuhakupixel.atg.ui.util.OverlayDropDown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -63,7 +63,7 @@ private var currentMatchesList: MutableState<List<MatchInfo>> = mutableStateOf(m
 private var matchesStatusText: MutableState<String> = mutableStateOf("0 matches")
 
 @Composable
-fun MemoryMenu(globalConf: GlobalConf?) {
+fun MemoryMenu(globalConf: GlobalConf?, overlayManager: OverlayManager?) {
     val snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
     val coroutineScope: CoroutineScope = rememberCoroutineScope()
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
@@ -71,6 +71,7 @@ fun MemoryMenu(globalConf: GlobalConf?) {
             globalConf = globalConf,
             snackbarHostState = snackbarHostState,
             coroutineScope = coroutineScope,
+            overlayManager = overlayManager,
         )
     }
 }
@@ -79,7 +80,8 @@ fun MemoryMenu(globalConf: GlobalConf?) {
 fun _MemoryMenu(
     globalConf: GlobalConf?,
     snackbarHostState: SnackbarHostState,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
+    overlayManager: OverlayManager?
 ) {
     val ace: ACE = (globalConf?.getAce())!!
     // ==================================
@@ -91,7 +93,7 @@ fun _MemoryMenu(
             valueTypeList.add(displayStr)
         }
         // init default
-        valueTypeSelectedOptionIdx.value = NumType.values().indexOf(Settings.defaultNumType)
+        valueTypeSelectedOptionIdx.value = NumType.values().indexOf(ATGSettings.defaultNumType)
     }
     // initialize display for scan types
     if (scanTypeList.isEmpty()) {
@@ -101,102 +103,124 @@ fun _MemoryMenu(
             scanTypeList.add(displayStr)
         }
         // init default
-        scanTypeSelectedOptionIdx.value = Operator.values().indexOf(Settings.defaultScanType)
+        scanTypeSelectedOptionIdx.value = Operator.values().indexOf(ATGSettings.defaultScanType)
     }
     val isAttached: Boolean = ace!!.IsAttached()
 
     // =================================
-    var openErrDialog: MutableState<Boolean> = remember { mutableStateOf(false) }
-    var errDialogMsg: MutableState<String> = remember { mutableStateOf("") }
 
     scanTypeEnabled.value = isAttached
     // only enable change value type at first scan
     valueTypeEnabled.value = isAttached && !(initialScanDone.value)
-    Column(
-        verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxSize(),
-    ) {
-        MatchesTable(
-            modifier = Modifier
-                .weight(0.6f)
-                .padding(16.dp),
-            matches = currentMatchesList,
-            matchesStatusText = matchesStatusText,
-            onMatchClicked = { matchInfo: MatchInfo ->
+
+    val content: @Composable (matchesTableModifier: Modifier, matchesSettingModifier: Modifier) -> Unit =
+        { matchesTableModifier, matchesSettingModifier ->
+
+            MatchesTable(
+                modifier = matchesTableModifier,
+                matches = currentMatchesList,
+                matchesStatusText = matchesStatusText,
+                onMatchClicked = { matchInfo: MatchInfo ->
+                    //
+                    val valueType: NumType = NumType.values()[valueTypeSelectedOptionIdx.value]
+                    AddressTableAddAddress(matchInfo = matchInfo, numType = valueType)
+                    //
+                    coroutineScope.launch() {
+                        snackbarHostState.showSnackbar(
+                            message = "Added ${matchInfo.address} to Address Table",
+                            duration = SnackbarDuration.Short,
+                            actionLabel = "Ok"
+
+                        )
+                    }
+                },
+            )
+            MatchesSetting(
+                modifier = matchesSettingModifier,
                 //
-                val valueType: NumType = NumType.values()[valueTypeSelectedOptionIdx.value]
-                AddressTableAddAddress(matchInfo = matchInfo, numType = valueType)
+                scanTypeEnabled = scanTypeEnabled,
+                scanTypeSelectedOptionIdx = scanTypeSelectedOptionIdx,
                 //
-                coroutineScope.launch() {
-                    snackbarHostState.showSnackbar(
-                        message = "Added ${matchInfo.address} to Address Table",
-                        duration = SnackbarDuration.Short,
-                        actionLabel = "Ok"
+                scanInputVal = scanInputVal,
+                // only allow to change Value type before any scan is done
+                valueTypeEnabled = valueTypeEnabled,
+                valueTypeSelectedOptionIdx = valueTypeSelectedOptionIdx,
+                //
+                nextScanEnabled = isAttached,
+                nextScanClicked = fun() {
+                    // ====================== get scan options ========================
+                    val valueType: NumType = NumType.values()[valueTypeSelectedOptionIdx.value]
+                    val scanType: Operator = Operator.values()[scanTypeSelectedOptionIdx.value]
+                    // ================================================================
+                    // set the value type
+                    if (!initialScanDone.value) ace.SetNumType(valueType)
+                    try {
+                        // do the scan
+                        if (scanAgainstValue.value) {
+                            ace.ScanAgainstValue(
+                                scanType,
+                                scanInputVal.value
+                            )
+                        } else {
+                            ace.ScanWithoutValue(scanType)
+                        }
+                    } catch (e: InvalidCommandException) {
+                        overlayManager!!.Dialog(
+                            title = "Error",
+                            text = e.stackTraceToString(),
+                            onConfirm = {},
+                        )
+                        return
+                    }
 
-                    )
-                }
-            }
-        )
-        MatchesSetting(
-            modifier = Modifier
-                .weight(0.4f)
-                .padding(10.dp)
-                .fillMaxSize(),
-            //
-            scanTypeEnabled = scanTypeEnabled,
-            scanTypeSelectedOptionIdx = scanTypeSelectedOptionIdx,
-            //
-            scanInputVal = scanInputVal,
-            // only allow to change Value type before any scan is done
-            valueTypeEnabled = valueTypeEnabled,
-            valueTypeSelectedOptionIdx = valueTypeSelectedOptionIdx,
-            //
-            nextScanEnabled = isAttached,
-            nextScanClicked = fun() {
-                // ====================== get scan options ========================
-                val valueType: NumType = NumType.values()[valueTypeSelectedOptionIdx.value]
-                val scanType: Operator = Operator.values()[scanTypeSelectedOptionIdx.value]
-                // ================================================================
-                // set the value type
-                if (!initialScanDone.value)
-                    ace.SetNumType(valueType)
-                try {
-                    // do the scan
-                    if (scanAgainstValue.value)
-                        ace.ScanAgainstValue(scanType, scanInputVal.value)
-                    else
-                        ace.ScanWithoutValue(scanType)
-                } catch (e: InvalidCommandException) {
-                    errDialogMsg.value = e.stackTraceToString()
-                    openErrDialog.value = true
-                    return
-                }
+                    // update matches table
+                    UpdateMatches(ace = ace)
+                    // set initial scan to true
+                    initialScanDone.value = true
+                },
+                //
+                newScanEnabled = isAttached && initialScanDone.value,
+                newScanClicked = {
+                    ace.ResetMatches()
+                    UpdateMatches(ace = ace)
+                    initialScanDone.value = false
+                },
+                scanAgainstValue = scanAgainstValue,
+                overlayManager = overlayManager!!,
+            )
+
+        }
 
 
-                // update matches table
-                UpdateMatches(ace = ace)
-                // set initial scan to true
-                initialScanDone.value = true
-            },
-            //
-            newScanEnabled = isAttached && initialScanDone.value,
-            newScanClicked = {
-                ace.ResetMatches()
-                UpdateMatches(ace = ace)
-                initialScanDone.value = false
-            },
-            scanAgainstValue = scanAgainstValue,
-        )
-    }
-    // show Error Dialog
-    if (openErrDialog.value) {
-        ErrorDialog(
-            msg = errDialogMsg.value,
-            onConfirm = {},
-            onClose = { openErrDialog.value = false }
-
-        )
+    // switch to column when portrait and row when landscape
+    if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) {
+        Column(
+            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            content(
+                matchesTableModifier = Modifier
+                    .weight(0.6f)
+                    .padding(16.dp),
+                matchesSettingModifier = Modifier
+                    .weight(0.4f)
+                    .padding(10.dp),
+            )
+        }
+    } else {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            content(
+                matchesTableModifier = Modifier
+                    .weight(0.6f)
+                    .padding(16.dp),
+                matchesSettingModifier = Modifier
+                    .weight(0.4f)
+                    .fillMaxSize()
+            )
+        }
     }
 }
 
@@ -212,8 +236,7 @@ private fun MatchesTable(
     Column(modifier = modifier) {
         Text(matchesStatusText.value)
         Spacer(modifier = Modifier.height(10.dp))
-        CreateTable(
-            colNames = listOf("Address", "Previous Value"),
+        CreateTable(colNames = listOf("Address", "Previous Value"),
             colWeights = listOf(0.4f, 0.6f),
             itemCount = matches.value.size,
             minEmptyItemCount = 50,
@@ -227,17 +250,16 @@ private fun MatchesTable(
                 if (colIndex == 1) {
                     Text(text = matches.value[rowIndex].prevValue, modifier = cellModifier)
                 }
-            }
-        )
+            })
     }
 
 }
 
 private fun UpdateMatches(ace: ACE) {
     val matchesCount: Int = ace.GetMatchCount()
-    val shownMatchesCount: Int = min(matchesCount, Settings.maxShownMatchesCount)
+    val shownMatchesCount: Int = min(matchesCount, ATGSettings.maxShownMatchesCount)
     // update ui
-    currentMatchesList.value = ace.ListMatches(Settings.maxShownMatchesCount)
+    currentMatchesList.value = ace.ListMatches(ATGSettings.maxShownMatchesCount)
     matchesStatusText.value = "$matchesCount matches (showing ${shownMatchesCount})"
 
 
@@ -263,6 +285,7 @@ private fun MatchesSetting(
     //
     newScanEnabled: Boolean,
     newScanClicked: () -> Unit,
+    overlayManager: OverlayManager,
 ) {
     @Composable
     fun ScanInputField(scanValue: MutableState<String>, scanAgainstValue: MutableState<Boolean>) {
@@ -275,17 +298,15 @@ private fun MatchesSetting(
                 },
                 text = "Against value",
             )
-            TextField(
+            NumberInputField(
                 modifier = Modifier.weight(0.65f),
                 enabled = scanAgainstValue.value,
                 value = scanValue.value,
                 onValueChange = { value ->
                     scanValue.value = value
                 },
-                label = { Text(text = "Scan For") },
-                placeholder = { Text(text = "value ...") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
+                label = "Scan For",
+                placeholder = "value ...",
             )
         }
     }
@@ -310,38 +331,86 @@ private fun MatchesSetting(
     }
 
     @Composable
-    fun ScanTypeDropDown(selectedOptionIndex: MutableState<Int>, enabled: MutableState<Boolean>) {
+    fun ScanTypeDropDown(
+        selectedOptionIndex: MutableState<Int>,
+        enabled: MutableState<Boolean>,
+        overlayManager: OverlayManager,
+    ) {
         val expanded = remember { mutableStateOf(false) }
         // default to "exact scan (=)"
-        ATGDropDown(
+        OverlayDropDown(
             enabled = enabled,
             label = "Scan Type",
             expanded = expanded,
             options = scanTypeList,
-            selectedOptionIndex = selectedOptionIndex,
+            selectedOptionIndex = selectedOptionIndex.value,
+            onShowOptions = fun(options: List<String>) {
+                overlayManager.overlayScanTypeDialog.show(
+                    title = "Value: ",
+                    choices = options,
+                    onConfirm = { index: Int, value: String ->
+                        selectedOptionIndex.value = index
+                    },
+                    onClose = {
+                        // after choice dialog is closed
+                        // we should also set expanded to false
+                        // so drop down will look closed
+                        expanded.value = false
+
+                    },
+                    chosenIndex = selectedOptionIndex.value
+                )
+            }
         )
     }
 
     @Composable
-    fun ValueTypeDropDown(selectedOptionIndex: MutableState<Int>, enabled: MutableState<Boolean>) {
+    fun ValueTypeDropDown(
+        selectedOptionIndex: MutableState<Int>,
+        enabled: MutableState<Boolean>,
+        overlayManager: OverlayManager,
+    ) {
         val expanded = remember { mutableStateOf(false) }
-        ATGDropDown(
+        OverlayDropDown(
             enabled = enabled,
             label = "Value Type",
             expanded = expanded,
             options = valueTypeList,
-            selectedOptionIndex = selectedOptionIndex,
+            selectedOptionIndex = selectedOptionIndex.value,
+            onShowOptions = fun(options: List<String>) {
+                overlayManager.overlayValueTypeDialog.show(
+                    title = "Value: ",
+                    choices = options,
+                    onConfirm = { index: Int, value: String ->
+                        selectedOptionIndex.value = index
+                    },
+                    onClose = {
+                        // after choice dialog is closed
+                        // we should also set expanded to false
+                        // so drop down will look closed
+                        expanded.value = false
+
+                    },
+                    chosenIndex = selectedOptionIndex.value
+                )
+            }
         )
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.SpaceBetween) {
-        ScanTypeDropDown(scanTypeSelectedOptionIdx, enabled = scanTypeEnabled)
+
+        ScanInputField(scanValue = scanInputVal, scanAgainstValue = scanAgainstValue)
+        ScanTypeDropDown(
+            scanTypeSelectedOptionIdx,
+            enabled = scanTypeEnabled,
+            overlayManager = overlayManager,
+        )
         ValueTypeDropDown(
             valueTypeSelectedOptionIdx,
             // only allow to change type during initial scan
             enabled = valueTypeEnabled,
+            overlayManager = overlayManager,
         )
-        ScanInputField(scanValue = scanInputVal, scanAgainstValue = scanAgainstValue)
         ScanButton(
             modifier = Modifier.fillMaxWidth(),
             nextScanEnabled = nextScanEnabled,
@@ -358,5 +427,5 @@ private fun MatchesSetting(
 @Composable
 @Preview
 fun MemoryMenuPreview() {
-    MemoryMenu(null)
+    MemoryMenu(null, null)
 }
