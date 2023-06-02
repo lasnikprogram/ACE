@@ -154,30 +154,17 @@ template <typename T>
 void read_arr_cmd_handler(proc_rw<T> *process_rw, ADDR address,
                           size_t read_length) {
 
-  byte *mem_buff = (byte *)malloc(sizeof(byte) * read_length);
   errno = 0;
-  // retrieve an array of byte
-  size_t successfull_read_length = process_rw->read_mem_new(
-      (byte *)address, read_length, mem_buff,
-      Scan_Utils::E_read_mem_method::with_process_vm_readv);
-
-  // check for some warnings/error
-  if (errno != 0) {
-    frontend_print("WARN: an error occured %s (%d)\n", strerror(errno), errno);
-  }
-  if (successfull_read_length != read_length) {
-    frontend_print("WARN: cannot read %zu bytes as requested\n", read_length);
-    frontend_print("WARN: only read %zu bytes\n", successfull_read_length);
-  }
 
   // print out the read memory
-  for (size_t i = 0; i < successfull_read_length; i++) {
+  for (size_t i = 0; i < sizeof(T) * read_length; i+= sizeof(T)) {
+    T read_val = process_rw->retrieve_val((byte *) (address + i));
     frontend_print("0x%llx ", address + i);
-    frontend_print("%s\n", std::to_string(mem_buff[i]).c_str());
+    frontend_print("%s\n", std::to_string(read_val).c_str());
   }
 
-  // free allocated memory
-  free(mem_buff);
+  if (errno != 0)
+    frontend_print("error while reading: %s\n", strerror(errno));
 }
 
 template <typename T>

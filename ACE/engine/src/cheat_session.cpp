@@ -206,7 +206,7 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
   for (size_t i = 0; i < readat_cmd_names.size(); i++) {
     CLI::App *read_cmd = app.add_subcommand(
         readat_cmd_names[i],
-        "read value at an address from the attached process");
+        "read a single value at an address");
 
     read_cmd
         ->add_option("<ADDRESS>", cheat_args.addr_to_read,
@@ -220,14 +220,15 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
     );
   }
 
-  // ================ readat command ===============================
+  // ================ readarr command ===============================
 
-  // TODO: maybe add support for reading different number types?
   CLI::App *read_arr_cmd =
-      app.add_subcommand("read_arr", "read an array of bytes ");
+      app.add_subcommand("read_arr", 
+      "read an array of values starting from an address");
 
   read_arr_cmd
-      ->add_option("<ADDRESS>", cheat_args.addr_to_read, "address to read from")
+      ->add_option("<ADDRESS>", cheat_args.addr_to_read, 
+                  "address to start reading from")
       ->required();
 
   read_arr_cmd
