@@ -185,7 +185,7 @@ template <typename T>
 void update_cmd_handler(ACE_scanner<T> *scanner,
                         const cheat_mode_config *cheat_config) {
   if (!cheat_config->initial_scan_done) {
-    frontend_print("WARN: No initial scan is done\n");
+    frontend_print("WARN: No initial scan was done\n");
     return;
   }
   scanner->update_current_scan_result();
@@ -206,13 +206,13 @@ void scan_level_cmd_handler(ACE_scanner<T> *scanner,
   std::string new_scan_level_val =
       Scan_Utils::E_scan_level_to_str.at(scan_level);
 
-  frontend_print("set scan level to %s\n", new_scan_level_val.c_str());
+  frontend_print("Set scan level to %s\n", new_scan_level_val.c_str());
 }
 
 void type_cmd_handler(E_num_type scan_type,
                       cheat_cmd_ret *cheater_on_line_ret_ptr) {
   cheater_on_line_ret_ptr->set_next_scan_type(scan_type);
-  frontend_print("set scan level to %s\n",
+  frontend_print("Set scan type to %s\n",
                  E_num_type_to_str_map.at(scan_type).c_str());
 }
 
@@ -220,7 +220,7 @@ template <typename T>
 void freeze_at_cmd_handler(freezer<T> *freezer_manager, ADDR addr) {
   int ret_val = freezer_manager->freeze_addr(addr);
   if (ret_val != 0) {
-    frontend_print("Fail to freeze address %lld\n", addr);
+    frontend_print("Failed to freeze at %lld\n", addr);
     return;
   }
 }
@@ -230,7 +230,7 @@ void freeze_at_val_cmd_handler(freezer<T> *freezer_manager, ADDR addr,
                                T num_val) {
   int ret_val = freezer_manager->freeze_addr_with_val(addr, num_val);
   if (ret_val != 0) {
-    frontend_print("Fail to freeze address %lld\n", addr);
+    frontend_print("Failed to freeze at %lld\n", addr);
     return;
   }
 }
@@ -239,7 +239,7 @@ template <typename T>
 void unfreeze_at_cmd_handler(freezer<T> *freezer_manager, ADDR addr) {
   int ret_val = freezer_manager->unfreeze_addr(addr);
   if (ret_val != 0) {
-    frontend_print("Fail to stop freezing address %lld\n", addr);
+    frontend_print("Failed to stop freezing at %lld\n", addr);
     return;
   }
 }
@@ -257,7 +257,7 @@ void freeze_all_cmd_handler(const ACE_scanner<T> *scanner,
       }
 
   );
-  frontend_print("freezed all scan's result\n");
+  frontend_print("Freezed all scan's result\n");
 }
 template <typename T>
 void freeze_list_cmd_handler(const freezer<T> *freezer_manager) {

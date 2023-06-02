@@ -385,7 +385,7 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
   CLI::App *config_scan_all_region_cmd = config_cmd->add_subcommand(
       "scan_all_region",
 
-      "scan all memory region of the program on initial scan\n\n"
+      "scan all memory regions of the program on initial scan\n\n"
       "(WARN: initial scan might take a long time)");
 
   config_scan_all_region_cmd
@@ -395,7 +395,7 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
   CLI::App *config_endian_cmd = config_cmd->add_subcommand(
       "endian",
 
-      "set endian type for scanning/writting\n"
+      "set endian type for scanning/writing\n"
       "(only use this for program that is interpreted and uses\n"
       "different endianness than the host's cpu)");
 
