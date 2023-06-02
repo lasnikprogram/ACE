@@ -1,14 +1,20 @@
 R"(
+          _____ ______     ______ _   _  _____ _____ _   _ ______ 
+    /\   / ____|  ____|   |  ____| \ | |/ ____|_   _| \ | |  ____|
+   /  \ | |    | |__      | |__  |  \| | |  __  | | |  \| | |__   
+  / /\ \| |    |  __|     |  __| | . ` | | |_ | | | | . ` |  __|  
+ / ____ \ |____| |____    | |____| |\  | |__| |_| |_| |\  | |____ 
+/_/    \_\_____|______|   |______|_| \_|\_____|_____|_| \_|______|
+                                                                  
+                                                                  
+
 ACE Engine, a game hacking tool for linux and android
 
 Copyright (C) 2023 AceEngineSoftware@gmail.com
 Author: Kuhaku Pixel (https://github.com/KuhakuPixel)
 
-For update news, features request and discussions regarding 
-Ace Engine
 Discord Server: https://discord.gg/8fJh9tPVXb
-================= IMPORTANT ==============================
-before using this software type `license` command and enter
-to view the license of the software.
 
+==================== IMPORTANT ====================
+Use the 'license' command before using the software!
 )"

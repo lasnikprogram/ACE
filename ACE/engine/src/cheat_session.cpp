@@ -450,7 +450,7 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
   // ============= type  ============
 
   CLI::App *config_type_cmd =
-      config_cmd->add_subcommand("type", "change type of type\n");
+      config_cmd->add_subcommand("type", "Change scan type\n");
 
   config_type_cmd->add_option("<VALUE>", cheat_args.num_scan_type)
       ->required()
@@ -532,14 +532,14 @@ cheat_session::cheater_mode_on_each_input(
 
     // check if any ptrace attach of deattach failed
     if (ptrace_attach_ret == -1) {
-      frontend_mark_task_fail("Fail to attach, exiting cheater mode\n");
+      frontend_mark_task_fail("Failed to attach, exiting cheater mode\n");
 
       _cheat_cmd_ret.loop_statement = E_loop_statement::break_;
       return _cheat_cmd_ret;
     }
 
     if (ptrace_deattach_ret == -1) {
-      frontend_mark_task_fail("Fail to deattach, exiting cheater mode\n");
+      frontend_mark_task_fail("Failed to detach, exiting cheater mode\n");
 
       _cheat_cmd_ret.loop_statement = E_loop_statement::break_;
       return _cheat_cmd_ret;
@@ -566,6 +566,7 @@ cheat_session::cheat_session(int pid, E_num_type current_scan_type) {
   this->engine_module_ptr_short = new engine_module<short>(pid);
   this->engine_module_ptr_byte = new engine_module<byte>(pid);
   this->engine_module_ptr_float = new engine_module<float>(pid);
+  this->engine_module_ptr_hex = new engine_module<std::string>(pid);
 }
 
 cheat_session::~cheat_session() {
@@ -575,6 +576,7 @@ cheat_session::~cheat_session() {
   delete this->engine_module_ptr_short;
   delete this->engine_module_ptr_byte;
   delete this->engine_module_ptr_float;
+  delete this->engine_module_ptr_hex;
 }
 
 E_loop_statement cheat_session::on_each_input(std::string input_str) {
@@ -645,6 +647,17 @@ E_loop_statement cheat_session::on_each_input(std::string input_str) {
     );
     break;
   }
+
+  case E_num_type::HEX: {
+    this->current_cheat_cmd_ret = this->cheater_mode_on_each_input<std::string>(
+
+        this->pid, this->engine_module_ptr_hex,
+        &(this->engine_module_ptr_hex->_cheat_mode_config), input_str
+
+    );
+    break;
+  }
+
   }
   return current_cheat_cmd_ret.loop_statement;
 }

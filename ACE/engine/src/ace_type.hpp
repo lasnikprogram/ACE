@@ -51,15 +51,15 @@ enum class E_num_type {
   LONG,
   BYTE,
   FLOAT,
+  HEX,
 
 };
 
-static const std::unordered_map<std::string, E_num_type>
-    num_type_str_to_E_num_type_map = {
+static const std::unordered_map<std::string, E_num_type> num_type_str_to_E_num_type_map = {
 
         {"short", E_num_type::SHORT}, {"int", E_num_type::INT},
         {"long", E_num_type::LONG},   {"byte", E_num_type::BYTE},
-        {"float", E_num_type::FLOAT},
+        {"float", E_num_type::FLOAT}, {"hex", E_num_type::HEX},
 
 };
 
@@ -68,7 +68,7 @@ static const std::unordered_map<E_num_type, std::string> E_num_type_to_str_map =
 
         {E_num_type::SHORT, "short"}, {E_num_type::INT, "int"},
         {E_num_type::LONG, "long"},   {E_num_type::BYTE, "byte"},
-        {E_num_type::FLOAT, "float"},
+        {E_num_type::FLOAT, "float"}, {E_num_type::HEX, "hex"},
 
 };
 
@@ -80,6 +80,7 @@ static const std::unordered_map<E_num_type, size_t> E_num_type_to_bit_size_map =
         {E_num_type::LONG, sizeof(long) * CHAR_BIT},
         {E_num_type::BYTE, CHAR_BIT},
         {E_num_type::FLOAT, sizeof(float) * CHAR_BIT},
+        {E_num_type::HEX, CHAR_BIT},
 
 };
 

@@ -20,6 +20,7 @@ private:
   engine_module<short> *engine_module_ptr_short = NULL;
   engine_module<byte> *engine_module_ptr_byte = NULL;
   engine_module<float> *engine_module_ptr_float = NULL;
+  engine_module<std::string> *engine_module_ptr_hex = NULL;
 
   E_num_type current_scan_type;
   //

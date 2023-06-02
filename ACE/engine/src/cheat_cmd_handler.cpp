@@ -59,12 +59,12 @@ void filter_cmd_handler(ACE_scanner<T> *scanner,
                         Scan_Utils::E_operator_type operator_type,
                         const cheat_mode_config *cheat_config) {
   if (!cheat_config->initial_scan_done)
-    frontend_print("WARN: no initial scan has been setup\n");
+    frontend_print("WARN: No initial scan has been done\n");
 
   double filter_time = -1;
   TIME_ACTION({ scanner->filter_val(operator_type); }, &filter_time);
 
-  frontend_print("current matches: %zu\n",
+  frontend_print("Current matches: %zu\n",
                  scanner->get_current_scan_result().get_matches_count());
   frontend_print("Done in: %lf s\n", filter_time);
 }
@@ -121,7 +121,7 @@ void scan_cmd_handler(ACE_scanner<T> *scanner,
 
   );
 
-  frontend_print("current matches: %zu\n",
+  frontend_print("Current matches: %zu\n",
                  scanner->get_current_scan_result().get_matches_count());
   frontend_print("Done in: %lf s\n", scan_time);
 }
@@ -145,7 +145,7 @@ void readat_cmd_handler(proc_rw<T> *process_rw, ADDR address) {
   T read_val = process_rw->retrieve_val((byte *)address);
 
   if (errno != 0)
-    frontend_print("error while reading: %s\n", strerror(errno));
+    frontend_print("Error while reading: %s\n", strerror(errno));
   else
     frontend_print("%s\n", std::to_string(read_val).c_str());
 }
@@ -164,7 +164,7 @@ void read_arr_cmd_handler(proc_rw<T> *process_rw, ADDR address,
   }
 
   if (errno != 0)
-    frontend_print("error while reading: %s\n", strerror(errno));
+    frontend_print("Error while reading: %s\n", strerror(errno));
 }
 
 template <typename T>
@@ -176,7 +176,7 @@ void writeat_cmd_handler(proc_rw<T> *process_rw, ADDR address, T val_to_write) {
   ssize_t ret_val = process_rw->write_val((byte *)address, (T)val_to_write);
 
   if (errno != 0 && ret_val == -1) {
-    frontend_print("Error while writting at %p: %s\n", (byte *)address,
+    frontend_print("Error while writing at %p: %s\n", (byte *)address,
                    strerror(errno));
     return;
   }
@@ -189,7 +189,7 @@ void update_cmd_handler(ACE_scanner<T> *scanner,
     return;
   }
   scanner->update_current_scan_result();
-  frontend_print("Done updating value!\n");
+  frontend_print("All values were updated\n");
 }
 
 template <typename T>
